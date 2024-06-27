@@ -1,0 +1,10 @@
+ARG NODE_V=18
+ARG ALPINE_V=3.18
+
+FROM node:${NODE_V}-alpine${ALPINE_V} as build
+WORKDIR /web
+COPY package.json ./
+RUN npm install
+COPY . /web
+
+CMD ["npm", "start", "--", "--host"]
