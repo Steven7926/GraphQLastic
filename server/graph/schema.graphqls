@@ -1,0 +1,76 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+# type Todo {
+#   id: ID!
+#   text: String!
+#   done: Boolean!
+#   user: User!
+# }
+
+# type User {
+#   id: ID!
+#   name: String!
+# }
+
+# type Query {
+#   todos: [Todo!]!
+# }
+
+# input NewTodo {
+#   text: String!
+#   userId: String!
+# }
+
+# type Mutation {
+#   createTodo(input: NewTodo!): Todo!
+# }
+
+type Query implements Node{
+  query: Query!
+  nodeId: ID!
+  node(
+    nodeId: ID!
+  ): Node
+
+  samEntities(
+    first: Int
+    after: Cursor
+    last: Int
+    before: Cursor
+  ): SamEntityConnection
+  
+}
+
+interface Node {
+  nodeId: ID!
+}
+
+type SamEntityConnection {
+  nodes: [SamEntity!]!
+  edges: [SamEntityEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SamEntity implements Node {
+  nodeId: ID!
+  id: ID!
+  name: String!
+}
+
+type SamEntitiesEdge {
+  cursor: Cursor!
+  node: SamEntity!
+}
+
+type PageInfo {
+  startCursor: Cursor
+  endCursor: Cursor
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+
+
