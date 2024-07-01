@@ -12,20 +12,21 @@ import (
 	"server/graph/model"
 )
 
-// CreateTodo is the resolver for the createTodo field.
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+// CreateSamEntity is the resolver for the createSamEntity field.
+func (r *mutationResolver) CreateSamEntity(ctx context.Context, input model.NewEntity) (*model.SamEntity, error) {
 	randNumber, _ := rand.Int(rand.Reader, big.NewInt(100))
-	todo := &model.Todo{
-		Text: input.Text,
-		ID:   fmt.Sprintf("T%d", randNumber),
-		User: &model.User{ID: input.UserID, Name: "user " + input.UserID},
+	entity := &model.SamEntity{
+		ID:       fmt.Sprintf("T%d", randNumber),
+		Name:     input.Name,
+		CageCode: input.CageCode,
 	}
-	r.todos = append(r.todos, todo)
-	return todo, nil
+	r.entities = append(r.entities, entity)
+	return entity, nil
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	return r.todos, nil
+// SamEntities is the resolver for the SamEntities field.
+func (r *queryResolver) SamEntities(ctx context.Context) ([]*model.SamEntity, error) {
+	return r.entities, nil
 }
 
 // Mutation returns MutationResolver implementation.
