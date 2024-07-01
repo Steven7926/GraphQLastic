@@ -4,15 +4,19 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"server/elastic"
 	"server/graph"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 )
 
-const defaultPort = "8080"
+const defaultPort = "5050"
 
 func main() {
+
+	elastic.InitES()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
