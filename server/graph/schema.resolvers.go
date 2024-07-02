@@ -88,7 +88,6 @@ func (r *queryResolver) SamEntities(ctx context.Context) ([]*model.SamEntity, er
 	for _, hit := range esResponse.Hits.Hits {
 		entities = append(entities, &hit.Source)
 	}
-	log.Printf("Entities  %v", entities)
 
 	return entities, nil
 }
