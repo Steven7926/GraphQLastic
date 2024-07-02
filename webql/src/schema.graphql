@@ -1,0 +1,10 @@
+
+type Query {
+  SamEntities: [SamEntity!]!
+}
+
+type SamEntity {
+  id: ID!
+  name: String!
+  cageCode: String
+}
