@@ -56,8 +56,7 @@ func (r *mutationResolver) CreateSamEntity(ctx context.Context, input model.NewE
 }
 
 // SamEntities is the resolver for the SamEntities field.
-func (r *queryResolver) SamEntities(ctx context.Context, first *int, last *int, offset *int, before *string, after *string) (*model.SamEntityConnection, error) {
-
+func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string) (*model.SamEntityConnection, error) {
 	// Check for nil parameters passed to query
 	var limit int
 	if first != nil {

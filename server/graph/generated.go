@@ -59,7 +59,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		SamEntities func(childComplexity int, first *int, last *int, offset *int, before *string, after *string) int
+		SamEntities func(childComplexity int, first *int, offset *int, before *string, after *string) int
 	}
 
 	SamEntity struct {
@@ -85,7 +85,7 @@ type MutationResolver interface {
 	CreateSamEntity(ctx context.Context, input model.NewEntity) (*model.SamEntity, error)
 }
 type QueryResolver interface {
-	SamEntities(ctx context.Context, first *int, last *int, offset *int, before *string, after *string) (*model.SamEntityConnection, error)
+	SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string) (*model.SamEntityConnection, error)
 }
 
 type executableSchema struct {
@@ -157,7 +157,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SamEntities(childComplexity, args["first"].(*int), args["last"].(*int), args["offset"].(*int), args["before"].(*string), args["after"].(*string)), true
+		return e.complexity.Query.SamEntities(childComplexity, args["first"].(*int), args["offset"].(*int), args["before"].(*string), args["after"].(*string)), true
 
 	case "SamEntity.cageCode":
 		if e.complexity.SamEntity.CageCode == nil {
@@ -390,41 +390,32 @@ func (ec *executionContext) field_Query_samEntities_args(ctx context.Context, ra
 	}
 	args["first"] = arg0
 	var arg1 *int
-	if tmp, ok := rawArgs["last"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
 		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["last"] = arg1
-	var arg2 *int
-	if tmp, ok := rawArgs["offset"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
-		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+	args["offset"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+		arg2, err = ec.unmarshalOCursor2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["offset"] = arg2
+	args["before"] = arg2
 	var arg3 *string
-	if tmp, ok := rawArgs["before"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
 		arg3, err = ec.unmarshalOCursor2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["before"] = arg3
-	var arg4 *string
-	if tmp, ok := rawArgs["after"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
-		arg4, err = ec.unmarshalOCursor2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["after"] = arg4
+	args["after"] = arg3
 	return args, nil
 }
 
@@ -710,7 +701,7 @@ func (ec *executionContext) _Query_samEntities(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().SamEntities(rctx, fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["offset"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string))
+		return ec.resolvers.Query().SamEntities(rctx, fc.Args["first"].(*int), fc.Args["offset"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
