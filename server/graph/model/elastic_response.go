@@ -32,3 +32,8 @@ type Hit struct {
 	Score  float64   `json:"_score"`
 	Source SamEntity `json:"_source"`
 }
+
+type Count struct {
+	Count  int    `json:"count"`
+	Shards Shards `json:"_shards"`
+}

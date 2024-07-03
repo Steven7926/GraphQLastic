@@ -10,5 +10,24 @@ type NewEntity struct {
 	CageCode *string `json:"cageCode,omitempty"`
 }
 
+type PageInfo struct {
+	HasNextPage     bool    `json:"hasNextPage"`
+	HasPreviousPage bool    `json:"hasPreviousPage"`
+	StartCursor     *string `json:"startCursor,omitempty"`
+	EndCursor       *string `json:"endCursor,omitempty"`
+}
+
 type Query struct {
+}
+
+type SamEntityConnection struct {
+	Nodes      []*SamEntity     `json:"nodes"`
+	Edges      []*SamEntityEdge `json:"edges"`
+	PageInfo   *PageInfo        `json:"pageInfo"`
+	TotalCount int              `json:"totalCount"`
+}
+
+type SamEntityEdge struct {
+	Cursor string     `json:"cursor"`
+	Node   *SamEntity `json:"node"`
 }

@@ -2,17 +2,44 @@
 #
 # https://gqlgen.com/getting-started/
 
+scalar Cursor
+scalar UUID
+
 type Query {
-  SamEntities: [SamEntity!]!
+  samEntities(
+    first: Int
+    offset: Int
+    before: Cursor
+    after: Cursor
+  ): SamEntityConnection
 }
 
-input NewEntity {
+type SamEntity {
+  id: UUID!
   name: String!
   cageCode: String
 }
 
-type SamEntity {
-  id: ID!
+type SamEntityConnection {
+  nodes: [SamEntity!]!
+  edges: [SamEntityEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SamEntityEdge {
+  cursor: Cursor!
+  node: SamEntity!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: Cursor
+  endCursor:Cursor
+}
+
+input NewEntity {
   name: String!
   cageCode: String
 }
