@@ -1,5 +1,10 @@
 # GraphQLastic
 A simple React interface capable of paginating through large datasets quickly using GraphQL as an API for Elastic Querying
+- The application is built using:
+    - A vite/react/ts frontend 
+    - A Golang Chi server on the backend serving up the GraphQL API which connects to Elasticsearch 
+    - Elasticsearch for document storing and fetching
+- When running you can go to http://localhost:5050 to test out the graphql api in the GraphQL playground
 
 # How to start
 1. Run ```docker compose up``` from the root directory to start the web/server/elasticsearch container stack
