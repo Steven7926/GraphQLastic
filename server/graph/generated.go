@@ -59,7 +59,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		SamEntities func(childComplexity int, first *int, offset *int, before *string, after *string) int
+		SamEntities func(childComplexity int, first *int, offset *int, before *string, after *string, search *string) int
 	}
 
 	SamEntity struct {
@@ -85,7 +85,7 @@ type MutationResolver interface {
 	CreateSamEntity(ctx context.Context, input model.NewEntity) (*model.SamEntity, error)
 }
 type QueryResolver interface {
-	SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string) (*model.SamEntityConnection, error)
+	SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string, search *string) (*model.SamEntityConnection, error)
 }
 
 type executableSchema struct {
@@ -157,7 +157,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SamEntities(childComplexity, args["first"].(*int), args["offset"].(*int), args["before"].(*string), args["after"].(*string)), true
+		return e.complexity.Query.SamEntities(childComplexity, args["first"].(*int), args["offset"].(*int), args["before"].(*string), args["after"].(*string), args["search"].(*string)), true
 
 	case "SamEntity.cageCode":
 		if e.complexity.SamEntity.CageCode == nil {
@@ -416,6 +416,15 @@ func (ec *executionContext) field_Query_samEntities_args(ctx context.Context, ra
 		}
 	}
 	args["after"] = arg3
+	var arg4 *string
+	if tmp, ok := rawArgs["search"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["search"] = arg4
 	return args, nil
 }
 
@@ -701,7 +710,7 @@ func (ec *executionContext) _Query_samEntities(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().SamEntities(rctx, fc.Args["first"].(*int), fc.Args["offset"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string))
+		return ec.resolvers.Query().SamEntities(rctx, fc.Args["first"].(*int), fc.Args["offset"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string), fc.Args["search"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

@@ -10,7 +10,8 @@ var es *elasticsearch.Client
 
 func InitES() {
 
-	esURL := "http://localhost:9200"
+	// Change to http://localhost:9200 if not using docker to run server
+	esURL := "http://elasticsearch:9200"
 	var err error
 	es, err = elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: []string{

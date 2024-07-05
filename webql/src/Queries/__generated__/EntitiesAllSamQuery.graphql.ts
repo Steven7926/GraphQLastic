@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b1b4bc6b2356cd1f16e6febb59c80532>>
+ * @generated SignedSource<<92eab6c1a9ef97da29f53cf5a1062743>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -14,6 +14,7 @@ export type EntitiesAllSamQuery$variables = {
   before?: any | null | undefined;
   first?: number | null | undefined;
   offset?: number | null | undefined;
+  search?: string | null | undefined;
 };
 export type EntitiesAllSamQuery$data = {
   readonly samEntities: {
@@ -57,7 +58,12 @@ v3 = {
   "kind": "LocalArgument",
   "name": "offset"
 },
-v4 = [
+v4 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "search"
+},
+v5 = [
   {
     "alias": null,
     "args": [
@@ -80,6 +86,11 @@ v4 = [
         "kind": "Variable",
         "name": "offset",
         "variableName": "offset"
+      },
+      {
+        "kind": "Variable",
+        "name": "search",
+        "variableName": "search"
       }
     ],
     "concreteType": "SamEntityConnection",
@@ -175,12 +186,13 @@ return {
       (v0/*: any*/),
       (v1/*: any*/),
       (v2/*: any*/),
-      (v3/*: any*/)
+      (v3/*: any*/),
+      (v4/*: any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "EntitiesAllSamQuery",
-    "selections": (v4/*: any*/),
+    "selections": (v5/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -190,23 +202,24 @@ return {
       (v2/*: any*/),
       (v3/*: any*/),
       (v1/*: any*/),
-      (v0/*: any*/)
+      (v0/*: any*/),
+      (v4/*: any*/)
     ],
     "kind": "Operation",
     "name": "EntitiesAllSamQuery",
-    "selections": (v4/*: any*/)
+    "selections": (v5/*: any*/)
   },
   "params": {
-    "cacheID": "09fbf44341bca185e7c1728c8eb14546",
+    "cacheID": "2cb051889e3befb262d1894b7a6242d2",
     "id": null,
     "metadata": {},
     "name": "EntitiesAllSamQuery",
     "operationKind": "query",
-    "text": "query EntitiesAllSamQuery(\n  $first: Int = 10\n  $offset: Int = 0\n  $before: Cursor = null\n  $after: Cursor = null\n) {\n  samEntities(first: $first, offset: $offset, before: $before, after: $after) {\n    totalCount\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n      startCursor\n    }\n    nodes {\n      name\n      id\n      cageCode\n    }\n  }\n}\n"
+    "text": "query EntitiesAllSamQuery(\n  $first: Int = 10\n  $offset: Int = 0\n  $before: Cursor = null\n  $after: Cursor = null\n  $search: String = null\n) {\n  samEntities(first: $first, offset: $offset, before: $before, after: $after, search: $search) {\n    totalCount\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n      startCursor\n    }\n    nodes {\n      name\n      id\n      cageCode\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "321930cfac6cae0428d182b769e0a007";
+(node as any).hash = "551bc8d6bd8256986f05a116381493c6";
 
 export default node;

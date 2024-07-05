@@ -56,7 +56,7 @@ func (r *mutationResolver) CreateSamEntity(ctx context.Context, input model.NewE
 }
 
 // SamEntities is the resolver for the SamEntities field.
-func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string) (*model.SamEntityConnection, error) {
+func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string, search *string) (*model.SamEntityConnection, error) {
 	// Check for nil parameters passed to query
 	var limit int
 	if first != nil {
@@ -94,15 +94,42 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 		return nil, err
 	}
 
-	// Search Query
-	searchQuery := map[string]interface{}{
-		"size": limit + 1,
-		"query": map[string]interface{}{
-			"match_all": map[string]interface{}{},
-		},
-		"sort": []map[string]interface{}{
-			{"name.keyword": "asc"},
-		},
+	var searchQuery map[string]interface{}
+	if search != nil {
+		searchQuery =
+			map[string]interface{}{
+				"size": limit + 1,
+				"query": map[string]interface{}{
+					"bool": map[string]interface{}{
+						"should": []map[string]interface{}{
+							{
+								"wildcard": map[string]interface{}{
+									"name": "*" + *search + "*",
+								},
+							},
+							{
+								"wildcard": map[string]interface{}{
+									"cage_code": "*" + *search + "*",
+								},
+							},
+						},
+					},
+				},
+				"sort": []map[string]interface{}{
+					{"name.keyword": "asc"},
+				},
+			}
+
+	} else {
+		searchQuery = map[string]interface{}{
+			"size": limit + 1,
+			"query": map[string]interface{}{
+				"match_all": map[string]interface{}{},
+			},
+			"sort": []map[string]interface{}{
+				{"name.keyword": "asc"},
+			},
+		}
 	}
 
 	// Set some params
@@ -146,47 +173,56 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 	log.Printf("%+v", esResponse)
 
 	// Now we need to resolve to our graphql schema
-
-	entities := []*model.SamEntity{}
-	edges := []*model.SamEntityEdge{}
-	for _, hit := range esResponse.Hits.Hits {
-		entity := &hit.Source
-		edge := &model.SamEntityEdge{
-			Node:   entity,
-			Cursor: hit.ID,
+	var paged_entities model.SamEntityConnection
+	if esResponse.Hits.Total.Value > 0 {
+		entities := []*model.SamEntity{}
+		edges := []*model.SamEntityEdge{}
+		for _, hit := range esResponse.Hits.Hits {
+			entity := &hit.Source
+			edge := &model.SamEntityEdge{
+				Node:   entity,
+				Cursor: hit.ID,
+			}
+			entities = append(entities, entity)
+			edges = append(edges, edge)
 		}
-		entities = append(entities, entity)
-		edges = append(edges, edge)
+
+		nextPage := false
+		// If theres no offset then we don't have a previous page
+		previousPage := offset != nil && *offset > 0
+		if len(entities) > limit {
+			entities = entities[:limit]
+			edges = edges[:limit]
+			nextPage = true
+		}
+
+		var startC, endC *string
+		if len(edges) > 0 {
+			endC = &edges[len(edges)-1].Cursor
+			startC = &edges[0].Cursor
+		}
+
+		paged_entities = model.SamEntityConnection{
+			Nodes:      entities,
+			Edges:      edges,
+			TotalCount: countResponse.Count,
+			PageInfo: &model.PageInfo{
+				StartCursor:     startC,
+				EndCursor:       endC,
+				HasNextPage:     nextPage,
+				HasPreviousPage: previousPage,
+			},
+		}
+	} else {
+		paged_entities = model.SamEntityConnection{
+			Nodes:      nil,
+			Edges:      nil,
+			TotalCount: 0,
+			PageInfo:   nil,
+		}
 	}
 
-	nextPage := false
-	// If theres no offset then we don't have a previous page
-	previousPage := offset != nil && *offset > 0
-	if len(entities) > limit {
-		entities = entities[:limit]
-		edges = edges[:limit]
-		nextPage = true
-	}
-
-	var startC, endC *string
-	if len(edges) > 0 {
-		endC = &edges[len(edges)-1].Cursor
-		startC = &edges[0].Cursor
-	}
-
-	paged_entities := &model.SamEntityConnection{
-		Nodes:      entities,
-		Edges:      edges,
-		TotalCount: countResponse.Count,
-		PageInfo: &model.PageInfo{
-			StartCursor:     startC,
-			EndCursor:       endC,
-			HasNextPage:     nextPage,
-			HasPreviousPage: previousPage,
-		},
-	}
-
-	return paged_entities, nil
+	return &paged_entities, err
 }
 
 // Mutation returns MutationResolver implementation.
