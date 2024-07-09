@@ -22,6 +22,7 @@ type SamEntityConnection {
   edges: [SamEntityEdge!]!
   pageInfo: PageInfo!
   totalCount: Int!
+  totalSearch: Int!
 }
 
 type SamEntityEdge {

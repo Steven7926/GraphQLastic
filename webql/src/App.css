@@ -47,6 +47,17 @@
 }
 
 .brightgreen{
-  color: #AAFF00
-  
+  color: #AAFF00 
 }
+
+.margin-right-5 {
+  margin-right: 5px;
+}
+
+.remove-highlight{
+  -webkit-user-select: none; /* Chrome/Safari */ 
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+ */
+  user-select: none;
+}
+

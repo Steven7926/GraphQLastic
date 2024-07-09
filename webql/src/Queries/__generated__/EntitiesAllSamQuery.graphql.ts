@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<92eab6c1a9ef97da29f53cf5a1062743>>
+ * @generated SignedSource<<fdd0e934bd6a9523dd42903b594478fb>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -30,6 +30,7 @@ export type EntitiesAllSamQuery$data = {
       readonly startCursor: any | null | undefined;
     };
     readonly totalCount: number;
+    readonly totalSearch: number;
   } | null | undefined;
 };
 export type EntitiesAllSamQuery = {
@@ -103,6 +104,13 @@ v5 = [
         "args": null,
         "kind": "ScalarField",
         "name": "totalCount",
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "kind": "ScalarField",
+        "name": "totalSearch",
         "storageKey": null
       },
       {
@@ -210,16 +218,16 @@ return {
     "selections": (v5/*: any*/)
   },
   "params": {
-    "cacheID": "2cb051889e3befb262d1894b7a6242d2",
+    "cacheID": "463c1d76935c0e1c2ba53a89a984c5f7",
     "id": null,
     "metadata": {},
     "name": "EntitiesAllSamQuery",
     "operationKind": "query",
-    "text": "query EntitiesAllSamQuery(\n  $first: Int = 10\n  $offset: Int = 0\n  $before: Cursor = null\n  $after: Cursor = null\n  $search: String = null\n) {\n  samEntities(first: $first, offset: $offset, before: $before, after: $after, search: $search) {\n    totalCount\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n      startCursor\n    }\n    nodes {\n      name\n      id\n      cageCode\n    }\n  }\n}\n"
+    "text": "query EntitiesAllSamQuery(\n  $first: Int = 10\n  $offset: Int = 0\n  $before: Cursor = null\n  $after: Cursor = null\n  $search: String = null\n) {\n  samEntities(first: $first, offset: $offset, before: $before, after: $after, search: $search) {\n    totalCount\n    totalSearch\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n      startCursor\n    }\n    nodes {\n      name\n      id\n      cageCode\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "551bc8d6bd8256986f05a116381493c6";
+(node as any).hash = "a5a6669e1864ba6f32c6b639115d6d36";
 
 export default node;

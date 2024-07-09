@@ -4,6 +4,7 @@ export const EntitiesAllSamQuery = graphql`
   query EntitiesAllSamQuery ($first: Int = 10, $offset: Int = 0, $before: Cursor = null, $after: Cursor = null, $search: String = null){
     samEntities (first: $first, offset: $offset, before: $before, after: $after, search: $search) {
       totalCount
+      totalSearch
       pageInfo {
         hasNextPage
         hasPreviousPage
