@@ -39,8 +39,9 @@ function QueryData({query, loader}: QueryDataProps) {
  
   const data = usePreloadedQuery(EntitiesAllSamQuery, query)
   
-  const total = data.samEntities?.totalCount ?? 0
-  const amountOfPages: number = Math.ceil(total / perPage)
+  const totalCount = data.samEntities?.totalCount ?? 0
+  const totalSearch = data.samEntities?.totalSearch ?? 0
+  const searchPages = Math.ceil(totalSearch / perPage)
 
   const [ _, startTransition] = useTransition();
 
@@ -50,6 +51,19 @@ function QueryData({query, loader}: QueryDataProps) {
 
   const [searchTerm, setSearchTerm] = useState<string | null>(null)
   console.log(data)
+
+  useEffect(() => {
+    if (totalSearch < perQuery){
+      let newPages = []
+      for (let i=0; i<searchPages; i++){
+        newPages[i] = i+1
+      }
+      setPages(newPages)
+    }
+    else {
+      setPages([1,2,3,4,5,6])
+    }
+  }, [data])
   
   const hitIt = (pageSelected: number, lastInList: boolean = false) => {
 
@@ -57,11 +71,13 @@ function QueryData({query, loader}: QueryDataProps) {
     setCurrentPage(pageSelected)
 
     if (lastInList){
-      setPages([...Array(6).keys()].map(i => i + pages[pages.length - 1]))
-      setSequence(1)
-      startTransition(()  => {
-        loader({first: perQuery, after: data.samEntities?.pageInfo.endCursor, search: searchTerm})
-      })
+      if (totalSearch > perQuery){
+        setPages([...Array(6).keys()].map(i => i + pages[pages.length - 1]))
+        setSequence(1)
+        startTransition(()  => {
+          loader({first: perQuery, after: data.samEntities?.pageInfo.endCursor, search: searchTerm})
+        })
+      }
     }
   }
 
@@ -86,18 +102,8 @@ function QueryData({query, loader}: QueryDataProps) {
   const onSearch = (value: string) => {
     setSearchTerm(value)
     startTransition(()  => {
-      loader({first: perPage, search: value})
+      loader({first: perQuery, search: value})
     })
-
-
-    const showPages = data.samEntities?.totalSearch ? Math.ceil(data.samEntities?.totalSearch / 10) : 0     
-    if (data.samEntities?.totalSearch && data.samEntities.totalSearch <= 50){
-      console.log((showPages))
-      let newPages = []
-      for ( let i=1; i < showPages; i++ )
-        newPages[i] = i
-      setPages(newPages)
-    }
   }
 
   return (
@@ -130,15 +136,17 @@ function QueryData({query, loader}: QueryDataProps) {
           </table>
           <div className='remove-highlight'>
             {currentPage > 1 && <span className="pointer margin-right-5" onClick={() => currentPage == pages[0] ? goBackwards(true) : goBackwards()}>{"<="}</span>}
-            {(data.samEntities.totalCount > 10 &&  data.samEntities.nodes.length >= 10) &&
+            {(data.samEntities.totalCount > perPage &&  data.samEntities.nodes.length >= perPage) &&
               pages.map((num) => {
-                if (num == 6 && pages.length > 5)
+                if (num == pages[pages.length - 1] && totalSearch > 50)
                   return <span key={num.toString()} className={`pointer ${num == currentPage ? 'brightgreen' : undefined}`} onClick={() => hitIt(num, true)}>{num+ "..."}</span>
                 else
                   return <span key={num.toString()} className={`pointer ${num == currentPage ? 'brightgreen' : undefined}`} onClick={() => hitIt(num)}>{num + " "}</span>
               })  
             }
-            {/* {data.samEntities.nodes.length >=10 && <span className="pointer" onClick={() => hitIt(amountOfPages)}>{amountOfPages}</span>} */}
+            {/* {(totalCount > perQuery)  &&
+                <span className="pointer" onClick={() => {}}>{searchTerm ? Math.ceil(totalSearch / perPage): Math.ceil(totalCount / perPage)}</span>
+            } */}
           </div>
         </div>
       )}
