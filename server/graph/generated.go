@@ -69,10 +69,11 @@ type ComplexityRoot struct {
 	}
 
 	SamEntityConnection struct {
-		Edges      func(childComplexity int) int
-		Nodes      func(childComplexity int) int
-		PageInfo   func(childComplexity int) int
-		TotalCount func(childComplexity int) int
+		Edges       func(childComplexity int) int
+		Nodes       func(childComplexity int) int
+		PageInfo    func(childComplexity int) int
+		TotalCount  func(childComplexity int) int
+		TotalSearch func(childComplexity int) int
 	}
 
 	SamEntityEdge struct {
@@ -207,6 +208,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.SamEntityConnection.TotalCount(childComplexity), true
+
+	case "SamEntityConnection.totalSearch":
+		if e.complexity.SamEntityConnection.TotalSearch == nil {
+			break
+		}
+
+		return e.complexity.SamEntityConnection.TotalSearch(childComplexity), true
 
 	case "SamEntityEdge.cursor":
 		if e.complexity.SamEntityEdge.Cursor == nil {
@@ -740,6 +748,8 @@ func (ec *executionContext) fieldContext_Query_samEntities(ctx context.Context, 
 				return ec.fieldContext_SamEntityConnection_pageInfo(ctx, field)
 			case "totalCount":
 				return ec.fieldContext_SamEntityConnection_totalCount(ctx, field)
+			case "totalSearch":
+				return ec.fieldContext_SamEntityConnection_totalSearch(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SamEntityConnection", field.Name)
 		},
@@ -1204,6 +1214,50 @@ func (ec *executionContext) _SamEntityConnection_totalCount(ctx context.Context,
 }
 
 func (ec *executionContext) fieldContext_SamEntityConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SamEntityConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SamEntityConnection_totalSearch(ctx context.Context, field graphql.CollectedField, obj *model.SamEntityConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SamEntityConnection_totalSearch(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalSearch, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SamEntityConnection_totalSearch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SamEntityConnection",
 		Field:      field,
@@ -3364,6 +3418,11 @@ func (ec *executionContext) _SamEntityConnection(ctx context.Context, sel ast.Se
 			}
 		case "totalCount":
 			out.Values[i] = ec._SamEntityConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalSearch":
+			out.Values[i] = ec._SamEntityConnection_totalSearch(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

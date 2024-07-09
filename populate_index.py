@@ -34,7 +34,8 @@ def main():
         sam_entity = {
             "id": id,
             "name": name,
-            "cage_code": cage_code
+            "cage_code": cage_code,
+            "num": i
         }
         print("Inserting into Elastic index: ", sam_entity)
         elastic_client.index(

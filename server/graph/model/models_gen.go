@@ -21,10 +21,11 @@ type Query struct {
 }
 
 type SamEntityConnection struct {
-	Nodes      []*SamEntity     `json:"nodes"`
-	Edges      []*SamEntityEdge `json:"edges"`
-	PageInfo   *PageInfo        `json:"pageInfo"`
-	TotalCount int              `json:"totalCount"`
+	Nodes       []*SamEntity     `json:"nodes"`
+	Edges       []*SamEntityEdge `json:"edges"`
+	PageInfo    *PageInfo        `json:"pageInfo"`
+	TotalCount  int              `json:"totalCount"`
+	TotalSearch int              `json:"totalSearch"`
 }
 
 type SamEntityEdge struct {

@@ -170,21 +170,37 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 	}
 
 	// Yayyy results
-	log.Printf("%+v", esResponse)
+	//log.Printf("%+v", esResponse)
 
 	// Now we need to resolve to our graphql schema
 	var paged_entities model.SamEntityConnection
 	if esResponse.Hits.Total.Value > 0 {
 		entities := []*model.SamEntity{}
 		edges := []*model.SamEntityEdge{}
-		for _, hit := range esResponse.Hits.Hits {
-			entity := &hit.Source
-			edge := &model.SamEntityEdge{
-				Node:   entity,
-				Cursor: hit.ID,
+
+		// If we have a search before in our query, then we need to re-order the
+		// data back to asc order
+		response_length := len(esResponse.Hits.Hits)
+
+		for i := 0; i < response_length; i++ {
+			hits := esResponse.Hits
+			if searchBefore != nil {
+				entity := &hits.Hits[(response_length-1)-i].Source
+				edge := &model.SamEntityEdge{
+					Node:   entity,
+					Cursor: entity.Name,
+				}
+				entities = append(entities, entity)
+				edges = append(edges, edge)
+			} else {
+				entity := &hits.Hits[i].Source
+				edge := &model.SamEntityEdge{
+					Node:   entity,
+					Cursor: entity.Name,
+				}
+				entities = append(entities, entity)
+				edges = append(edges, edge)
 			}
-			entities = append(entities, entity)
-			edges = append(edges, edge)
 		}
 
 		nextPage := false
@@ -203,9 +219,10 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 		}
 
 		paged_entities = model.SamEntityConnection{
-			Nodes:      entities,
-			Edges:      edges,
-			TotalCount: countResponse.Count,
+			Nodes:       entities,
+			Edges:       edges,
+			TotalCount:  countResponse.Count,
+			TotalSearch: esResponse.Hits.Total.Value,
 			PageInfo: &model.PageInfo{
 				StartCursor:     startC,
 				EndCursor:       endC,
