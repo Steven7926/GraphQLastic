@@ -16,4 +16,4 @@ A simple React interface capable of paginating through large datasets quickly us
         - ```python3 -m venv [name the env]```
         - ``` cd [name of the env]/bin```
         - ``` source activate```
-3. Thats It! Now go to the frontend on http://localhost:5173 and start searching to see performance. 
+3. Thats It! Now go to the frontend on http://localhost:5173 and start searching to see performance 
