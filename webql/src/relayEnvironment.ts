@@ -8,7 +8,8 @@ import {
   
   
   const fetchFn: FetchFunction = async (request, variables) => {
-    const HTTP_ENDPOINT = "http://localhost:5050/query";
+    const HTTP_ENDPOINT = import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:5051/query";
+    console.log(request)
   
     const resp = await fetch(HTTP_ENDPOINT, {
       method: "POST",

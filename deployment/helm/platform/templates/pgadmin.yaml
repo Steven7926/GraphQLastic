@@ -1,0 +1,138 @@
+{{- if .Values.pgadmin.enabled }}
+{{- $pg := .Values.postgres }}
+{{- with .Values.pgadmin }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgadmin-servers
+data:
+  servers.json: |
+    {
+      "Servers": {
+        "1": {
+          "Name": "GraphQLastic",
+          "Group": "Servers",
+          "Host": "postgres",
+          "Port": 5432,
+          "MaintenanceDB": {{ $pg.database | quote }},
+          "Username": {{ $pg.username | quote }},
+          "SSLMode": "disable"
+        }
+      }
+    }
+---
+{{- if .persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pgadmin-data
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: {{ .persistence.size }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      securityContext:
+        fsGroup: 5050
+      containers:
+        - name: pgadmin
+          image: "{{ .image }}:{{ .tag }}"
+          imagePullPolicy: {{ .pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              value: {{ .email | quote }}
+            - name: PGADMIN_DEFAULT_PASSWORD
+              value: {{ .password | quote }}
+            - name: SCRIPT_NAME
+              value: {{ .path | quote }}
+          readinessProbe:
+            httpGet:
+              path: {{ printf "%s/misc/ping" .path }}
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          {{- with .resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgadmin
+            - name: servers
+              mountPath: /pgadmin4/servers.json
+              subPath: servers.json
+              readOnly: true
+      volumes:
+        - name: data
+          {{- if .persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: pgadmin-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: servers
+          configMap:
+            name: pgadmin-servers
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: pgadmin
+{{- if .ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pgadmin
+  {{- with .ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    - http:
+        paths:
+          - path: {{ .path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: pgadmin-service
+                port:
+                  number: 80
+{{- end }}
+{{- end }}
+{{- end }}

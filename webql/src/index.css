@@ -1,11 +1,30 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f6;
+  --border: #e3e6eb;
+  --text: #1c2330;
+  --text-muted: #667085;
+  --accent: #3a5ccc;
+  --accent-soft: #e8edfb;
+  --person: #1f7a5a;
+  --person-soft: #e3f4ec;
+  --company: #8a5a12;
+  --company-soft: #fbf0dc;
+  --active: #1f7a5a;
+  --inactive: #8a94a6;
+  --expired: #c0392b;
+  --pending: #b7791f;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --radius: 10px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--text);
+  background-color: var(--bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,56 +32,42 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b;
+    --surface: #1a1e26;
+    --surface-muted: #222833;
+    --border: #2c3340;
+    --text: #e6e9ef;
+    --text-muted: #98a2b3;
+    --accent: #8ea6ff;
+    --accent-soft: #263257;
+    --person: #6fd3aa;
+    --person-soft: #183a2e;
+    --company: #f0c27a;
+    --company-soft: #3d2f17;
+    --active: #6fd3aa;
+    --inactive: #7d8799;
+    --expired: #ff8a7a;
+    --pending: #f0c27a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
 }
-a:hover {
-  color: #535bf2;
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--bg);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
 }

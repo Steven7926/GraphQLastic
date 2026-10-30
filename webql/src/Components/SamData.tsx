@@ -2,13 +2,53 @@ import { useState, useEffect, useTransition } from 'react'
 import '../App.css'
 import { useQueryLoader, PreloadedQuery, usePreloadedQuery, UseQueryLoaderLoadQueryOptions } from 'react-relay';
 import { EntitiesAllSamQuery } from '../Queries/Entities';
-import { EntitiesAllSamQuery as QueryType, EntitiesAllSamQuery$data, EntitiesAllSamQuery$variables } from '../Queries/__generated__/EntitiesAllSamQuery.graphql';
+import { EntitiesAllSamQuery as QueryType, EntitiesAllSamQuery$variables, SearchSource, EntityType, UsState, RegistrationStatus } from '../Queries/__generated__/EntitiesAllSamQuery.graphql';
 // Global amount to show per page
 // Per Query is the amount of documents to load into the users browser at one time, in this example, 
 // we are querying for 50 records and showing 10 at a time on each page, when the user hits page 6,
 // a new query is run to get the next 50
 const perQuery = 50
 const perPage = 10
+const searchDebounceMs = 300
+
+const sources: { value: SearchSource, label: string }[] = [
+  { value: 'ELASTICSEARCH', label: 'Elasticsearch' },
+  { value: 'POSTGRES', label: 'Postgres' },
+]
+
+const entityTypes: { value: EntityType | null, label: string }[] = [
+  { value: null, label: 'All' },
+  { value: 'PERSON', label: 'Person' },
+  { value: 'COMPANY', label: 'Company' },
+]
+
+const usStates: { value: UsState, label: string }[] = [
+  { value: 'CA', label: 'California' },
+  { value: 'CO', label: 'Colorado' },
+  { value: 'DC', label: 'District of Columbia' },
+  { value: 'FL', label: 'Florida' },
+  { value: 'GA', label: 'Georgia' },
+  { value: 'MD', label: 'Maryland' },
+  { value: 'NY', label: 'New York' },
+  { value: 'TX', label: 'Texas' },
+  { value: 'VA', label: 'Virginia' },
+  { value: 'WA', label: 'Washington' },
+]
+
+const statuses: { value: RegistrationStatus, label: string }[] = [
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'INACTIVE', label: 'Inactive' },
+  { value: 'EXPIRED', label: 'Expired' },
+  { value: 'PENDING', label: 'Pending' },
+]
+
+interface Filters {
+  type: EntityType | null
+  state: UsState | null
+  status: RegistrationStatus | null
+}
+
+const noFilters: Filters = { type: null, state: null, status: null }
 
 export default function SamData() {
 
@@ -18,11 +58,14 @@ export default function SamData() {
   }, [])
   
   return (
-    <div className=''>
-      <h1>Entities</h1>
-        {query &&
-            <QueryData query={query} loader={setQuery}/>
-        }
+    <div>
+      <header className='page-header'>
+        <h1>Entity Search</h1>
+        <p>Search SAM entities through GraphQL, backed by Elasticsearch or Postgres full text search.</p>
+      </header>
+      {query &&
+          <QueryData query={query} loader={setQuery}/>
+      }
     </div>
   )
 }
@@ -41,113 +84,200 @@ function QueryData({query, loader}: QueryDataProps) {
   
   const totalCount = data.samEntities?.totalCount ?? 0
   const totalSearch = data.samEntities?.totalSearch ?? 0
-  const searchPages = Math.ceil(totalSearch / perPage)
+  const totalPages = Math.ceil(totalSearch / perPage)
+  const pagesPerQuery = perQuery / perPage
 
-  const [ _, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
-  const [pages, setPages] = useState<number[]>([1, 2, 3, 4, 5, 6]);
+  const [pageStart, setPageStart] = useState<number>(1);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [sequence, setSequence] = useState<number>(1);
 
   const [searchTerm, setSearchTerm] = useState<string | null>(null)
-  console.log(data)
+  const [inputValue, setInputValue] = useState<string>('')
+  const [source, setSource] = useState<SearchSource>('ELASTICSEARCH')
+  const [filters, setFilters] = useState<Filters>(noFilters)
 
-  useEffect(() => {
-    if (totalSearch < perQuery){
-      let newPages = []
-      for (let i=0; i<searchPages; i++){
-        newPages[i] = i+1
-      }
-      setPages(newPages)
-    }
-    else {
-      setPages([1,2,3,4,5,6])
-    }
-  }, [data])
-  
-  const hitIt = (pageSelected: number, lastInList: boolean = false) => {
-
-    setSequence(pages.indexOf(pageSelected + 1))
-    setCurrentPage(pageSelected)
-
-    if (lastInList){
-      if (totalSearch > perQuery){
-        setPages([...Array(6).keys()].map(i => i + pages[pages.length - 1]))
-        setSequence(1)
-        startTransition(()  => {
-          loader({first: perQuery, after: data.samEntities?.pageInfo.endCursor, search: searchTerm})
-        })
-      }
-    }
+  const pages: number[] = []
+  for (let page = pageStart; page <= Math.min(pageStart + pagesPerQuery, totalPages); page++) {
+    pages.push(page)
   }
 
-  const goBackwards = (firstInList: boolean = false) => {
-
-    if (firstInList){
+  const goToPage = (page: number) => {
+    if (page >= pageStart + pagesPerQuery) {
       startTransition(()  => {
-        loader({first: perQuery, before: data.samEntities?.pageInfo.startCursor, search: searchTerm })
+        setPageStart(page)
+        setCurrentPage(page)
+        loader({first: perQuery, after: data.samEntities?.pageInfo.endCursor, search: searchTerm, source, ...filters})
       })
-      console.log("hit")
-      setPages(pages.map(i => (i-pages.length) + 1))
-      setSequence(pages.length - 1)
-      setCurrentPage(currentPage-1)
     }
     else {
-      setSequence(pages.indexOf((currentPage-1) + 1))
-      setCurrentPage(currentPage-1)
+      setCurrentPage(page)
     }
-
   }
-  
-  const onSearch = (value: string) => {
-    setSearchTerm(value)
+
+  const goBackwards = () => {
+    if (currentPage == pageStart) {
+      startTransition(()  => {
+        setPageStart(pageStart - pagesPerQuery)
+        setCurrentPage(currentPage - 1)
+        loader({first: perQuery, before: data.samEntities?.pageInfo.startCursor, search: searchTerm, source, ...filters})
+      })
+    }
+    else {
+      setCurrentPage(currentPage - 1)
+    }
+  }
+
+  const loadFirstPage = (variables: EntitiesAllSamQuery$variables) => {
     startTransition(()  => {
-      loader({first: perQuery, search: value})
+      setPageStart(1)
+      setCurrentPage(1)
+      loader({first: perQuery, ...variables})
     })
   }
 
+  const onSearch = (value: string) => {
+    setSearchTerm(value)
+    loadFirstPage({search: value, source, ...filters})
+  }
+
+  useEffect(() => {
+    if (inputValue === (searchTerm ?? '')) return
+    const timer = setTimeout(() => onSearch(inputValue), searchDebounceMs)
+    return () => clearTimeout(timer)
+  }, [inputValue, source, filters])
+
+  const onSourceChange = (value: SearchSource) => {
+    setSource(value)
+    loadFirstPage({search: searchTerm, source: value, ...filters})
+  }
+
+  const onFiltersChange = (newFilters: Filters) => {
+    setFilters(newFilters)
+    loadFirstPage({search: searchTerm, source, ...newFilters})
+  }
+
+  const hasFilters = filters.type !== null || filters.state !== null || filters.status !== null
+
+  const sourceLabel = sources.find((s) => s.value === source)?.label
+  const batchOffset = (currentPage - pageStart) * perPage
+  const rows = data.samEntities?.nodes.slice(batchOffset, batchOffset + perPage) ?? []
+
   return (
     <div>
-      <input placeholder='Search...' onChange={(e) => onSearch(e.target.value)}/>
+      <div className='toolbar'>
+        <label className='field field-grow'>
+          <span className='field-label'>Search</span>
+          <div className='search-box'>
+            <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>
+              <circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/>
+            </svg>
+            <input placeholder='Name, UEI, city, cage code, id...' value={inputValue} onChange={(e) => setInputValue(e.target.value)}/>
+          </div>
+        </label>
+        <div className='field'>
+          <span className='field-label'>Database</span>
+          <div className='segmented' role='group' aria-label='Database'>
+            {sources.map((s) => (
+              <button key={s.value} type='button' className={source === s.value ? 'active' : undefined} aria-pressed={source === s.value} onClick={() => source !== s.value && onSourceChange(s.value)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className='field'>
+          <span className='field-label'>Type</span>
+          <div className='segmented' role='group' aria-label='Type'>
+            {entityTypes.map((t) => (
+              <button key={t.label} type='button' className={filters.type === t.value ? 'active' : undefined} aria-pressed={filters.type === t.value} onClick={() => filters.type !== t.value && onFiltersChange({...filters, type: t.value})}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <label className='field'>
+          <span className='field-label'>State</span>
+          <select className='select' value={filters.state ?? ''} onChange={(e) => onFiltersChange({...filters, state: e.target.value ? e.target.value as UsState : null})}>
+            <option value=''>All states</option>
+            {usStates.map((st) => <option key={st.value} value={st.value}>{st.label}</option>)}
+          </select>
+        </label>
+        <label className='field'>
+          <span className='field-label'>Status</span>
+          <select className='select' value={filters.status ?? ''} onChange={(e) => onFiltersChange({...filters, status: e.target.value ? e.target.value as RegistrationStatus : null})}>
+            <option value=''>All statuses</option>
+            {statuses.map((st) => <option key={st.value} value={st.value}>{st.label}</option>)}
+          </select>
+        </label>
+        {hasFilters &&
+          <button type='button' className='clear-filters' onClick={() => onFiltersChange(noFilters)}>Clear filters</button>
+        }
+      </div>
+
       {data.samEntities && (
-        <div>
-          <table>
-            <thead>
-              <tr>
-              
-                {Object.keys(data.samEntities.nodes[0]).map((key) => {
-                  return <th key={key.toString()}>{key[0].toUpperCase() + key.substring(1)}</th>
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {
-                data.samEntities?.nodes.slice((sequence-1) * perPage, ((sequence-1) * perPage) + perPage).map((entity) => {
+        <div className={`results ${isPending ? 'loading' : ''}`} aria-busy={isPending}>
+          <div className='results-summary'>
+            <span>
+              <strong>{totalSearch.toLocaleString()}</strong> results of {totalCount.toLocaleString()} records
+            </span>
+            <span className='source-tag'>{sourceLabel}</span>
+          </div>
+          <div className='table-wrap'>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>UEI</th>
+                  <th>Type</th>
+                  <th>City</th>
+                  <th>State</th>
+                  <th>Status</th>
+                  <th>Cage Code</th>
+                  <th>Id</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 &&
+                  <tr><td colSpan={8} className='empty'>No results match your search</td></tr>
+                }
+                {rows.map((entity) => {
                   return (
-                    <tr key={entity.name}>
-                      <td>{entity.name}</td>
-                      <td>{entity.id}</td>
-                      <td>{entity.cageCode}</td>
+                    <tr key={entity.id}>
+                      <td className='cell-name'>{entity.name}</td>
+                      <td className='cell-mono'>{entity.uei}</td>
+                      <td>
+                        {entity.type &&
+                          <span className={`badge ${entity.type === 'Person' ? 'badge-person' : 'badge-company'}`}>{entity.type}</span>
+                        }
+                      </td>
+                      <td>{entity.city}</td>
+                      <td>{entity.state}</td>
+                      <td>
+                        {entity.status &&
+                          <span className={`status status-${entity.status.toLowerCase()}`}>{entity.status}</span>
+                        }
+                      </td>
+                      <td className='cell-mono'>{entity.cageCode}</td>
+                      <td className='cell-mono'>{entity.id}</td>
                     </tr>
                   )
-                })
-              }
-            </tbody>
-          </table>
-          <div className='remove-highlight'>
-            {currentPage > 1 && <span className="pointer margin-right-5" onClick={() => currentPage == pages[0] ? goBackwards(true) : goBackwards()}>{"<="}</span>}
-            {(data.samEntities.totalCount > perPage &&  data.samEntities.nodes.length >= perPage) &&
-              pages.map((num) => {
-                if (num == pages[pages.length - 1] && totalSearch > 50)
-                  return <span key={num.toString()} className={`pointer ${num == currentPage ? 'brightgreen' : undefined}`} onClick={() => hitIt(num, true)}>{num+ "..."}</span>
-                else
-                  return <span key={num.toString()} className={`pointer ${num == currentPage ? 'brightgreen' : undefined}`} onClick={() => hitIt(num)}>{num + " "}</span>
-              })  
-            }
-            {/* {(totalCount > perQuery)  &&
-                <span className="pointer" onClick={() => {}}>{searchTerm ? Math.ceil(totalSearch / perPage): Math.ceil(totalCount / perPage)}</span>
-            } */}
+                })}
+              </tbody>
+            </table>
           </div>
+          {totalPages > 1 &&
+            <nav className='pager' aria-label='Pagination'>
+              {currentPage > 1 && <button type='button' aria-label='Previous page' onClick={goBackwards}>{"\u2190"}</button>}
+              {pages.map((num) => {
+                const nextBatch = num >= pageStart + pagesPerQuery
+                return (
+                  <button key={num.toString()} type='button' className={num == currentPage ? 'active' : undefined} aria-current={num == currentPage ? 'page' : undefined} onClick={() => goToPage(num)}>
+                    {nextBatch ? `${num}\u2026` : num}
+                  </button>
+                )
+              })}
+            </nav>
+          }
         </div>
       )}
     </div>

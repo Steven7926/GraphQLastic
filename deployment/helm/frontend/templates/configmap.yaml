@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  {{- $envFile := printf "envs/%s.env" .Values.environment }}
+  {{- $lines := .Files.Get $envFile | splitList "\n" }}
+  {{- range $lines }}
+  {{- $line := trim . }}
+  {{- if and $line (not (hasPrefix "#" $line)) }}
+  {{- $parts := splitList "=" $line }}
+  {{ first $parts }}: {{ rest $parts | join "=" | quote }}
+  {{- end }}
+  {{- end }}

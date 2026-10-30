@@ -1,0 +1,11 @@
+# A simple example using a basic deployment/service/ingress setup
+# Can be used locally with helm and k3s for a dev environment
+
+apiVersion: v2
+name: graphqlastic-server
+description: A Helm chart for the GraphQLastic Go GraphQL server
+type: application
+# Chart version
+version: 0.1.0
+# App version
+appVersion: "0.0.1"

@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"server/elastic"
 	"server/graph/model"
+	"strconv"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
@@ -56,13 +57,19 @@ func (r *mutationResolver) CreateSamEntity(ctx context.Context, input model.NewE
 }
 
 // SamEntities is the resolver for the SamEntities field.
-func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string, search *string) (*model.SamEntityConnection, error) {
+func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string, search *string, source *model.SearchSource, typeArg *model.EntityType, state *model.UsState, status *model.RegistrationStatus) (*model.SamEntityConnection, error) {
 	// Check for nil parameters passed to query
 	var limit int
 	if first != nil {
 		limit = *first
 	} else {
 		limit = 10 // Default limit
+	}
+
+	filters := filtersFromArgs(typeArg, state, status)
+
+	if source != nil && *source == model.SearchSourcePostgres {
+		return samEntitiesPostgres(ctx, limit, offset, before, after, search, filters)
 	}
 
 	var searchAfter []interface{}
@@ -94,45 +101,54 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 		return nil, err
 	}
 
-	var searchQuery map[string]interface{}
-	if search != nil {
-		searchQuery =
-			map[string]interface{}{
-				"size": limit + 1,
-				"query": map[string]interface{}{
-					"bool": map[string]interface{}{
-						"should": []map[string]interface{}{
-							{
-								"wildcard": map[string]interface{}{
-									"name": "*" + *search + "*",
-								},
-							},
-							{
-								"wildcard": map[string]interface{}{
-									"cage_code": "*" + *search + "*",
-								},
-							},
-						},
+	boolQuery := map[string]interface{}{}
+	if search != nil && strings.TrimSpace(*search) != "" {
+		pattern := "*" + wildcardEscaper.Replace(strings.TrimSpace(*search)) + "*"
+		should := []map[string]interface{}{}
+		for _, field := range searchableFields {
+			should = append(should, map[string]interface{}{
+				"wildcard": map[string]interface{}{
+					field + ".keyword": map[string]interface{}{
+						"value":            pattern,
+						"case_insensitive": true,
 					},
 				},
-				"sort": []map[string]interface{}{
-					{"name.keyword": "asc"},
-				},
-			}
-
-	} else {
-		searchQuery = map[string]interface{}{
-			"size": limit + 1,
-			"query": map[string]interface{}{
-				"match_all": map[string]interface{}{},
-			},
-			"sort": []map[string]interface{}{
-				{"name.keyword": "asc"},
-			},
+			})
 		}
+		if num, err := strconv.Atoi(strings.TrimSpace(*search)); err == nil {
+			should = append(should, map[string]interface{}{
+				"term": map[string]interface{}{
+					"num": num,
+				},
+			})
+		}
+		boolQuery["should"] = should
+		boolQuery["minimum_should_match"] = 1
+	}
+	if len(filters) > 0 {
+		filterClauses := []map[string]interface{}{}
+		for _, f := range filters {
+			filterClauses = append(filterClauses, map[string]interface{}{
+				"term": map[string]interface{}{
+					f.field + ".keyword": f.value,
+				},
+			})
+		}
+		boolQuery["filter"] = filterClauses
+	}
+
+	searchQuery := map[string]interface{}{
+		"size": limit + 1,
+		"query": map[string]interface{}{
+			"bool": boolQuery,
+		},
+		"sort": []map[string]interface{}{
+			{"name.keyword": "asc"},
+		},
 	}
 
 	// Set some params
+	searchQuery["track_total_hits"] = true
 	if searchBefore != nil {
 		searchQuery["sort"] = []map[string]interface{}{
 			{"name.keyword": "desc"},
@@ -182,6 +198,12 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 		// data back to asc order
 		response_length := len(esResponse.Hits.Hits)
 
+		nextPage := false
+		if response_length > limit {
+			response_length = limit
+			nextPage = true
+		}
+
 		for i := 0; i < response_length; i++ {
 			hits := esResponse.Hits
 			if searchBefore != nil {
@@ -203,14 +225,8 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 			}
 		}
 
-		nextPage := false
 		// If theres no offset then we don't have a previous page
 		previousPage := offset != nil && *offset > 0
-		if len(entities) > limit {
-			entities = entities[:limit]
-			edges = edges[:limit]
-			nextPage = true
-		}
 
 		var startC, endC *string
 		if len(edges) > 0 {
@@ -232,10 +248,11 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 		}
 	} else {
 		paged_entities = model.SamEntityConnection{
-			Nodes:      nil,
-			Edges:      nil,
-			TotalCount: 0,
-			PageInfo:   nil,
+			Nodes:       []*model.SamEntity{},
+			Edges:       []*model.SamEntityEdge{},
+			TotalCount:  countResponse.Count,
+			TotalSearch: 0,
+			PageInfo:    &model.PageInfo{},
 		}
 	}
 

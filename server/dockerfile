@@ -1,18 +1,22 @@
-FROM golang:1.22.4 as builder
+FROM golang:1.22.4 AS builder
 
-# Set destination for COPY
-WORKDIR /app
-
-COPY ./ /app/server
-
-# Navigate to the server directory
 WORKDIR /app/server
 
-# Build the Go app
-RUN go build -o server server.go
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+
+COPY ./ ./
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o server server.go
+
+FROM gcr.io/distroless/static-debian12:nonroot
+
+COPY --from=builder /app/server/server /app/server
 
 # Expose port 5050 to the outside world
-EXPOSE 5050
+EXPOSE 5051
 
 # Command to run the executable
-CMD ["./server"]
+CMD ["/app/server"]

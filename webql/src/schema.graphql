@@ -1,6 +1,36 @@
 scalar Cursor
 scalar UUID
 
+enum SearchSource {
+  ELASTICSEARCH
+  POSTGRES
+}
+
+enum EntityType {
+  PERSON
+  COMPANY
+}
+
+enum UsState {
+  CA
+  CO
+  DC
+  FL
+  GA
+  MD
+  NY
+  TX
+  VA
+  WA
+}
+
+enum RegistrationStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  PENDING
+}
+
 type Query {
   samEntities(
     first: Int
@@ -8,6 +38,10 @@ type Query {
     before: Cursor
     after: Cursor
     search: String
+    source: SearchSource = ELASTICSEARCH
+    type: EntityType
+    state: UsState
+    status: RegistrationStatus
   ): SamEntityConnection
 }
 
@@ -15,6 +49,11 @@ type SamEntity {
   id: UUID!
   name: String!
   cageCode: String
+  type: String
+  uei: String
+  city: String
+  state: String
+  status: String
 }
 
 type SamEntityConnection {

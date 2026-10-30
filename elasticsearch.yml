@@ -1,6 +1,7 @@
 # elasticsearch.yml
 cluster.name: "graphqlastic"
 network.host: 0.0.0.0
+http.port: 9200
 
 # Disable security features if they are enabled
 xpack.security.enabled: false

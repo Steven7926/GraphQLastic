@@ -1,0 +1,91 @@
+# Default values for dev.
+
+replicaCount: 1
+
+image:
+  repository: k3d-graphqlastic-dev-registry:9100/graphqlastic-server
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: "graphqlastic-server"
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 5051
+
+resources: 
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+#volumes: []
+  # - name: foo
+  #   secret:
+  #     secretName: mysecret
+  #     optional: false
+
+#volumeMounts: []
+  # - name: foo
+  #   mountPath: "/etc/foo"
+  #   readOnly: true
+  
+podSecurityContext:
+  fsGroup: 10001
+
+pvcs: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Configmap environment
+environment: dev
+
+secretSets:
+  - secretName: graphqlastic-server-secrets
+    keys:
+      POSTGRES_URL: POSTGRES_URL
+
+secrets:
+  create: true
+  data:
+    graphqlastic-server-secrets:
+      POSTGRES_URL: "postgres://postgres:postgres@postgres:5432/graphqlastic?sslmode=disable"
+
+global:
+  security:
+    allowInsecureImages: true

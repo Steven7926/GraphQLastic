@@ -2,6 +2,7 @@ package elastic
 
 import (
 	"log"
+	"os"
 
 	"github.com/elastic/go-elasticsearch/v8"
 )
@@ -11,7 +12,10 @@ var es *elasticsearch.Client
 func InitES() {
 
 	// Change to http://localhost:9200 if not using docker to run server
-	esURL := "http://localhost:9200"
+	esURL := os.Getenv("ELASTICSEARCH_URL")
+	if esURL == "" {
+		esURL = "http://elasticsearch:9200"
+	}
 	var err error
 	es, err = elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: []string{

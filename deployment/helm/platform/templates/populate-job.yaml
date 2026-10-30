@@ -1,0 +1,46 @@
+{{- if .Values.populate.enabled }}
+{{- $pg := .Values.postgres }}
+{{- with .Values.populate }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: populate-data-{{ $.Release.Revision }}
+  labels:
+    app: populate-data
+spec:
+  backoffLimit: {{ .backoffLimit }}
+  template:
+    metadata:
+      labels:
+        app: populate-data
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-stores
+          image: {{ .waitImage }}
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z postgres 5432 && wget -qO- "http://elasticsearch:9200/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null; do
+                echo "waiting for postgres and elasticsearch..."
+                sleep 5
+              done
+      containers:
+        - name: populate
+          image: "{{ .image }}:{{ .tag }}"
+          imagePullPolicy: {{ .pullPolicy }}
+          args: ["python", "populate_index.py", "--only-if-missing"]
+          env:
+            - name: ELASTIC_URL
+              value: http://elasticsearch:9200
+            - name: POSTGRES_URL
+              value: {{ printf "postgresql://%s:%s@postgres:5432/%s" $pg.username $pg.password $pg.database | quote }}
+            - name: POPULATE_RECORDS
+              value: {{ .records | int | quote }}
+          {{- with .resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
+{{- end }}

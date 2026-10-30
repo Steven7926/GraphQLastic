@@ -59,13 +59,18 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		SamEntities func(childComplexity int, first *int, offset *int, before *string, after *string, search *string) int
+		SamEntities func(childComplexity int, first *int, offset *int, before *string, after *string, search *string, source *model.SearchSource, typeArg *model.EntityType, state *model.UsState, status *model.RegistrationStatus) int
 	}
 
 	SamEntity struct {
 		CageCode func(childComplexity int) int
+		City     func(childComplexity int) int
 		ID       func(childComplexity int) int
 		Name     func(childComplexity int) int
+		State    func(childComplexity int) int
+		Status   func(childComplexity int) int
+		Type     func(childComplexity int) int
+		Uei      func(childComplexity int) int
 	}
 
 	SamEntityConnection struct {
@@ -86,7 +91,7 @@ type MutationResolver interface {
 	CreateSamEntity(ctx context.Context, input model.NewEntity) (*model.SamEntity, error)
 }
 type QueryResolver interface {
-	SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string, search *string) (*model.SamEntityConnection, error)
+	SamEntities(ctx context.Context, first *int, offset *int, before *string, after *string, search *string, source *model.SearchSource, typeArg *model.EntityType, state *model.UsState, status *model.RegistrationStatus) (*model.SamEntityConnection, error)
 }
 
 type executableSchema struct {
@@ -158,7 +163,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SamEntities(childComplexity, args["first"].(*int), args["offset"].(*int), args["before"].(*string), args["after"].(*string), args["search"].(*string)), true
+		return e.complexity.Query.SamEntities(childComplexity, args["first"].(*int), args["offset"].(*int), args["before"].(*string), args["after"].(*string), args["search"].(*string), args["source"].(*model.SearchSource), args["type"].(*model.EntityType), args["state"].(*model.UsState), args["status"].(*model.RegistrationStatus)), true
 
 	case "SamEntity.cageCode":
 		if e.complexity.SamEntity.CageCode == nil {
@@ -166,6 +171,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.SamEntity.CageCode(childComplexity), true
+
+	case "SamEntity.city":
+		if e.complexity.SamEntity.City == nil {
+			break
+		}
+
+		return e.complexity.SamEntity.City(childComplexity), true
 
 	case "SamEntity.id":
 		if e.complexity.SamEntity.ID == nil {
@@ -180,6 +192,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.SamEntity.Name(childComplexity), true
+
+	case "SamEntity.state":
+		if e.complexity.SamEntity.State == nil {
+			break
+		}
+
+		return e.complexity.SamEntity.State(childComplexity), true
+
+	case "SamEntity.status":
+		if e.complexity.SamEntity.Status == nil {
+			break
+		}
+
+		return e.complexity.SamEntity.Status(childComplexity), true
+
+	case "SamEntity.type":
+		if e.complexity.SamEntity.Type == nil {
+			break
+		}
+
+		return e.complexity.SamEntity.Type(childComplexity), true
+
+	case "SamEntity.uei":
+		if e.complexity.SamEntity.Uei == nil {
+			break
+		}
+
+		return e.complexity.SamEntity.Uei(childComplexity), true
 
 	case "SamEntityConnection.edges":
 		if e.complexity.SamEntityConnection.Edges == nil {
@@ -433,6 +473,42 @@ func (ec *executionContext) field_Query_samEntities_args(ctx context.Context, ra
 		}
 	}
 	args["search"] = arg4
+	var arg5 *model.SearchSource
+	if tmp, ok := rawArgs["source"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("source"))
+		arg5, err = ec.unmarshalOSearchSource2ᚖserverᚋgraphᚋmodelᚐSearchSource(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["source"] = arg5
+	var arg6 *model.EntityType
+	if tmp, ok := rawArgs["type"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+		arg6, err = ec.unmarshalOEntityType2ᚖserverᚋgraphᚋmodelᚐEntityType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["type"] = arg6
+	var arg7 *model.UsState
+	if tmp, ok := rawArgs["state"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+		arg7, err = ec.unmarshalOUsState2ᚖserverᚋgraphᚋmodelᚐUsState(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["state"] = arg7
+	var arg8 *model.RegistrationStatus
+	if tmp, ok := rawArgs["status"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+		arg8, err = ec.unmarshalORegistrationStatus2ᚖserverᚋgraphᚋmodelᚐRegistrationStatus(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["status"] = arg8
 	return args, nil
 }
 
@@ -516,6 +592,16 @@ func (ec *executionContext) fieldContext_Mutation_createSamEntity(ctx context.Co
 				return ec.fieldContext_SamEntity_name(ctx, field)
 			case "cageCode":
 				return ec.fieldContext_SamEntity_cageCode(ctx, field)
+			case "type":
+				return ec.fieldContext_SamEntity_type(ctx, field)
+			case "uei":
+				return ec.fieldContext_SamEntity_uei(ctx, field)
+			case "city":
+				return ec.fieldContext_SamEntity_city(ctx, field)
+			case "state":
+				return ec.fieldContext_SamEntity_state(ctx, field)
+			case "status":
+				return ec.fieldContext_SamEntity_status(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SamEntity", field.Name)
 		},
@@ -718,7 +804,7 @@ func (ec *executionContext) _Query_samEntities(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().SamEntities(rctx, fc.Args["first"].(*int), fc.Args["offset"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string), fc.Args["search"].(*string))
+		return ec.resolvers.Query().SamEntities(rctx, fc.Args["first"].(*int), fc.Args["offset"].(*int), fc.Args["before"].(*string), fc.Args["after"].(*string), fc.Args["search"].(*string), fc.Args["source"].(*model.SearchSource), fc.Args["type"].(*model.EntityType), fc.Args["state"].(*model.UsState), fc.Args["status"].(*model.RegistrationStatus))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1026,6 +1112,211 @@ func (ec *executionContext) fieldContext_SamEntity_cageCode(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _SamEntity_type(ctx context.Context, field graphql.CollectedField, obj *model.SamEntity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SamEntity_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SamEntity_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SamEntity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SamEntity_uei(ctx context.Context, field graphql.CollectedField, obj *model.SamEntity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SamEntity_uei(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Uei, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SamEntity_uei(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SamEntity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SamEntity_city(ctx context.Context, field graphql.CollectedField, obj *model.SamEntity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SamEntity_city(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.City, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SamEntity_city(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SamEntity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SamEntity_state(ctx context.Context, field graphql.CollectedField, obj *model.SamEntity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SamEntity_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SamEntity_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SamEntity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SamEntity_status(ctx context.Context, field graphql.CollectedField, obj *model.SamEntity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SamEntity_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SamEntity_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SamEntity",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SamEntityConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.SamEntityConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SamEntityConnection_nodes(ctx, field)
 	if err != nil {
@@ -1071,6 +1362,16 @@ func (ec *executionContext) fieldContext_SamEntityConnection_nodes(_ context.Con
 				return ec.fieldContext_SamEntity_name(ctx, field)
 			case "cageCode":
 				return ec.fieldContext_SamEntity_cageCode(ctx, field)
+			case "type":
+				return ec.fieldContext_SamEntity_type(ctx, field)
+			case "uei":
+				return ec.fieldContext_SamEntity_uei(ctx, field)
+			case "city":
+				return ec.fieldContext_SamEntity_city(ctx, field)
+			case "state":
+				return ec.fieldContext_SamEntity_state(ctx, field)
+			case "status":
+				return ec.fieldContext_SamEntity_status(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SamEntity", field.Name)
 		},
@@ -1359,6 +1660,16 @@ func (ec *executionContext) fieldContext_SamEntityEdge_node(_ context.Context, f
 				return ec.fieldContext_SamEntity_name(ctx, field)
 			case "cageCode":
 				return ec.fieldContext_SamEntity_cageCode(ctx, field)
+			case "type":
+				return ec.fieldContext_SamEntity_type(ctx, field)
+			case "uei":
+				return ec.fieldContext_SamEntity_uei(ctx, field)
+			case "city":
+				return ec.fieldContext_SamEntity_city(ctx, field)
+			case "state":
+				return ec.fieldContext_SamEntity_state(ctx, field)
+			case "status":
+				return ec.fieldContext_SamEntity_status(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SamEntity", field.Name)
 		},
@@ -3367,6 +3678,16 @@ func (ec *executionContext) _SamEntity(ctx context.Context, sel ast.SelectionSet
 			}
 		case "cageCode":
 			out.Values[i] = ec._SamEntity_cageCode(ctx, field, obj)
+		case "type":
+			out.Values[i] = ec._SamEntity_type(ctx, field, obj)
+		case "uei":
+			out.Values[i] = ec._SamEntity_uei(ctx, field, obj)
+		case "city":
+			out.Values[i] = ec._SamEntity_city(ctx, field, obj)
+		case "state":
+			out.Values[i] = ec._SamEntity_state(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._SamEntity_status(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4312,6 +4633,22 @@ func (ec *executionContext) marshalOCursor2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
+func (ec *executionContext) unmarshalOEntityType2ᚖserverᚋgraphᚋmodelᚐEntityType(ctx context.Context, v interface{}) (*model.EntityType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.EntityType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOEntityType2ᚖserverᚋgraphᚋmodelᚐEntityType(ctx context.Context, sel ast.SelectionSet, v *model.EntityType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
 	if v == nil {
 		return nil, nil
@@ -4328,6 +4665,22 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
+func (ec *executionContext) unmarshalORegistrationStatus2ᚖserverᚋgraphᚋmodelᚐRegistrationStatus(ctx context.Context, v interface{}) (*model.RegistrationStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.RegistrationStatus)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalORegistrationStatus2ᚖserverᚋgraphᚋmodelᚐRegistrationStatus(ctx context.Context, sel ast.SelectionSet, v *model.RegistrationStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) marshalOSamEntity2ᚖserverᚋgraphᚋmodelᚐSamEntity(ctx context.Context, sel ast.SelectionSet, v *model.SamEntity) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -4340,6 +4693,22 @@ func (ec *executionContext) marshalOSamEntityConnection2ᚖserverᚋgraphᚋmode
 		return graphql.Null
 	}
 	return ec._SamEntityConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOSearchSource2ᚖserverᚋgraphᚋmodelᚐSearchSource(ctx context.Context, v interface{}) (*model.SearchSource, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.SearchSource)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSearchSource2ᚖserverᚋgraphᚋmodelᚐSearchSource(ctx context.Context, sel ast.SelectionSet, v *model.SearchSource) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
@@ -4356,6 +4725,22 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOUsState2ᚖserverᚋgraphᚋmodelᚐUsState(ctx context.Context, v interface{}) (*model.UsState, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.UsState)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOUsState2ᚖserverᚋgraphᚋmodelᚐUsState(ctx context.Context, sel ast.SelectionSet, v *model.UsState) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

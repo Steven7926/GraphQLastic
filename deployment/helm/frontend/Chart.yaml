@@ -1,0 +1,8 @@
+apiVersion: v2
+name: graphqlastic-webql
+description: A Helm chart for the GraphQLastic React/Relay frontend
+type: application
+# Chart version
+version: 0.1.0
+# App version
+appVersion: "0.0.1"

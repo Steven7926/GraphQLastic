@@ -2,6 +2,12 @@
 
 package model
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type Mutation struct {
 }
 
@@ -31,4 +37,188 @@ type SamEntityConnection struct {
 type SamEntityEdge struct {
 	Cursor string     `json:"cursor"`
 	Node   *SamEntity `json:"node"`
+}
+
+type EntityType string
+
+const (
+	EntityTypePerson  EntityType = "PERSON"
+	EntityTypeCompany EntityType = "COMPANY"
+)
+
+var AllEntityType = []EntityType{
+	EntityTypePerson,
+	EntityTypeCompany,
+}
+
+func (e EntityType) IsValid() bool {
+	switch e {
+	case EntityTypePerson, EntityTypeCompany:
+		return true
+	}
+	return false
+}
+
+func (e EntityType) String() string {
+	return string(e)
+}
+
+func (e *EntityType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = EntityType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid EntityType", str)
+	}
+	return nil
+}
+
+func (e EntityType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type RegistrationStatus string
+
+const (
+	RegistrationStatusActive   RegistrationStatus = "ACTIVE"
+	RegistrationStatusInactive RegistrationStatus = "INACTIVE"
+	RegistrationStatusExpired  RegistrationStatus = "EXPIRED"
+	RegistrationStatusPending  RegistrationStatus = "PENDING"
+)
+
+var AllRegistrationStatus = []RegistrationStatus{
+	RegistrationStatusActive,
+	RegistrationStatusInactive,
+	RegistrationStatusExpired,
+	RegistrationStatusPending,
+}
+
+func (e RegistrationStatus) IsValid() bool {
+	switch e {
+	case RegistrationStatusActive, RegistrationStatusInactive, RegistrationStatusExpired, RegistrationStatusPending:
+		return true
+	}
+	return false
+}
+
+func (e RegistrationStatus) String() string {
+	return string(e)
+}
+
+func (e *RegistrationStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = RegistrationStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid RegistrationStatus", str)
+	}
+	return nil
+}
+
+func (e RegistrationStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type SearchSource string
+
+const (
+	SearchSourceElasticsearch SearchSource = "ELASTICSEARCH"
+	SearchSourcePostgres      SearchSource = "POSTGRES"
+)
+
+var AllSearchSource = []SearchSource{
+	SearchSourceElasticsearch,
+	SearchSourcePostgres,
+}
+
+func (e SearchSource) IsValid() bool {
+	switch e {
+	case SearchSourceElasticsearch, SearchSourcePostgres:
+		return true
+	}
+	return false
+}
+
+func (e SearchSource) String() string {
+	return string(e)
+}
+
+func (e *SearchSource) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SearchSource(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SearchSource", str)
+	}
+	return nil
+}
+
+func (e SearchSource) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type UsState string
+
+const (
+	UsStateCa UsState = "CA"
+	UsStateCo UsState = "CO"
+	UsStateDc UsState = "DC"
+	UsStateFl UsState = "FL"
+	UsStateGa UsState = "GA"
+	UsStateMd UsState = "MD"
+	UsStateNy UsState = "NY"
+	UsStateTx UsState = "TX"
+	UsStateVa UsState = "VA"
+	UsStateWa UsState = "WA"
+)
+
+var AllUsState = []UsState{
+	UsStateCa,
+	UsStateCo,
+	UsStateDc,
+	UsStateFl,
+	UsStateGa,
+	UsStateMd,
+	UsStateNy,
+	UsStateTx,
+	UsStateVa,
+	UsStateWa,
+}
+
+func (e UsState) IsValid() bool {
+	switch e {
+	case UsStateCa, UsStateCo, UsStateDc, UsStateFl, UsStateGa, UsStateMd, UsStateNy, UsStateTx, UsStateVa, UsStateWa:
+		return true
+	}
+	return false
+}
+
+func (e UsState) String() string {
+	return string(e)
+}
+
+func (e *UsState) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = UsState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid UsState", str)
+	}
+	return nil
+}
+
+func (e UsState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

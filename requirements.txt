@@ -1,1 +1,2 @@
 elasticsearch==8.14
+psycopg[binary]==3.2.3

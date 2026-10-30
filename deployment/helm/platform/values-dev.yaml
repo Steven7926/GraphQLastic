@@ -1,0 +1,10 @@
+postgres:
+  image: k3d-graphqlastic-dev-registry:9100/graphqlastic-postgres
+  tag: latest
+  database: graphqlastic
+  username: postgres
+  password: postgres
+
+populate:
+  image: k3d-graphqlastic-dev-registry:9100/graphqlastic-populate
+  tag: latest

@@ -6,6 +6,7 @@ import (
 	"os"
 	"server/elastic"
 	"server/graph"
+	"server/postgres"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -14,7 +15,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
-const defaultPort = "5050"
+const defaultPort = "5051"
 
 func main() {
 
@@ -26,10 +27,12 @@ func main() {
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 	}))
 
-	router.Handle("/query", graphqlHandler())
+	graphql := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	router.Handle("/query", graphql)
 	router.Handle("/", playgroundHandler())
 
 	elastic.InitES()
+	postgres.InitPG()
 
 	port := os.Getenv("PORT")
 	if port == "" {

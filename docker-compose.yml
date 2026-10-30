@@ -37,7 +37,7 @@ services:
       context: ./server
       dockerfile: Dockerfile
     ports:
-      - 5050:5050
+      - 5051:5051
     env_file:
       - .env
     networks:
@@ -46,8 +46,45 @@ services:
       - ./server:/server
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/graphqlastic?sslmode=disable
     depends_on:
       - elasticsearch
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=graphqlastic
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - graphqlastic-net
+
+  pgadmin:
+    image: dpage/pgadmin4:8.12
+    container_name: pgadmin
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+    ports:
+      - "127.0.0.1:5050:80"
+    volumes:
+      - pgadmindata:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+    networks:
+      - graphqlastic-net
+    depends_on:
+      - postgres
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
@@ -69,5 +106,9 @@ networks:
 
 volumes:
   nodemodules: {}
-  esdata: 
+  esdata:
+    driver: local
+  pgdata:
+    driver: local
+  pgadmindata:
     driver: local

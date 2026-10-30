@@ -1,0 +1,68 @@
+postgres:
+  image: graphqlastic-postgres
+  tag: latest
+  pullPolicy: IfNotPresent
+  database: graphqlastic
+  username: postgres
+  password: postgres
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+elasticsearch:
+  image: docker.elastic.co/elasticsearch/elasticsearch
+  tag: 8.14.1
+  pullPolicy: IfNotPresent
+  javaOpts: "-Xms512m -Xmx512m"
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      memory: 2Gi
+
+pgadmin:
+  enabled: true
+  image: dpage/pgadmin4
+  tag: "8.12"
+  pullPolicy: IfNotPresent
+  email: admin@example.com
+  password: admin
+  path: /pgadmin
+  persistence:
+    enabled: true
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  ingress:
+    enabled: true
+    className: ""
+    annotations: {}
+
+populate:
+  enabled: true
+  image: graphqlastic-populate
+  tag: latest
+  pullPolicy: IfNotPresent
+  records: 5000000
+  waitImage: busybox:1.36
+  backoffLimit: 4
+  resources:
+    requests:
+      cpu: 500m
+      memory: 256Mi
+    limits:
+      memory: 1Gi

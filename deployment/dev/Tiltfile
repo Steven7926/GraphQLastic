@@ -1,0 +1,150 @@
+CLUSTER_NAME  = 'graphqlastic-dev'
+NAMESPACE     = 'default'
+ROOT          = '../..'
+REGISTRY_PORT = 9100
+INGRESS_URL   = 'http://localhost:8081'
+
+# BACKEND
+BACKEND_RELEASE_NAME = CLUSTER_NAME + '-server'
+BACKEND_IMAGE_NAME   = 'graphqlastic-server'
+BACKEND_CHART_PATH   = '../helm/backend'
+BACKEND_VALUES_FILE  = BACKEND_CHART_PATH + '/values-dev.yaml'
+BACKEND_SRC          = ROOT + '/server'
+BACKEND_DOCKERFILE   = BACKEND_SRC + '/dockerfile'
+BACKEND_SERVICE_PORT = 5051
+BACKEND_LOCAL_PORT   = 5052
+
+# FRONTEND
+FRONTEND_RELEASE_NAME = CLUSTER_NAME + '-webql'
+FRONTEND_IMAGE_NAME   = 'graphqlastic-webql'
+FRONTEND_CHART_PATH   = '../helm/frontend'
+FRONTEND_VALUES_FILE  = FRONTEND_CHART_PATH + '/values-dev.yaml'
+FRONTEND_SRC          = ROOT + '/webql'
+FRONTEND_DOCKERFILE   = FRONTEND_SRC + '/dockerfile'
+
+# DATABASE
+DB_RELEASE_NAME = CLUSTER_NAME + '-platform'
+DB_CHART_PATH   = '../helm/platform'
+DB_HOST_SRC     = ROOT + '/postgres'
+DB_IMAGE_NAME   = 'graphqlastic-postgres'
+POPULATE_IMAGE_NAME = 'graphqlastic-populate'
+POSTGRES_LOCAL_PORT      = 5434
+ELASTICSEARCH_LOCAL_PORT = 9201
+
+allow_k8s_contexts('k3d-' + CLUSTER_NAME)
+
+default_registry(
+    'localhost:%d' % REGISTRY_PORT,
+    host_from_cluster='k3d-%s-registry:%d' % (CLUSTER_NAME, REGISTRY_PORT),
+)
+
+# ---------- Image builds (separate Dockerfiles) ----------
+docker_build(
+    BACKEND_IMAGE_NAME,
+    BACKEND_SRC,
+    dockerfile=BACKEND_DOCKERFILE,
+)
+
+docker_build(
+    FRONTEND_IMAGE_NAME,
+    FRONTEND_SRC,
+    dockerfile=FRONTEND_DOCKERFILE,
+    ignore=['node_modules', 'dist'],
+    live_update=[
+        fall_back_on([FRONTEND_SRC + '/package.json', FRONTEND_SRC + '/package-lock.json']),
+        sync(FRONTEND_SRC + '/src', '/web/src'),
+        sync(FRONTEND_SRC + '/index.html', '/web/index.html'),
+    ],
+)
+
+docker_build(DB_IMAGE_NAME, DB_HOST_SRC)
+
+docker_build(
+    POPULATE_IMAGE_NAME,
+    ROOT,
+    dockerfile=ROOT + '/populate.Dockerfile',
+    only=['populate_index.py', 'requirements.txt'],
+)
+
+# ---------- Manifests ----------
+k8s_yaml(helm(DB_CHART_PATH, name=DB_RELEASE_NAME, namespace=NAMESPACE,
+    set=['postgres.image=' + DB_IMAGE_NAME, 'populate.image=' + POPULATE_IMAGE_NAME]))
+
+k8s_yaml(helm(BACKEND_CHART_PATH, name=BACKEND_RELEASE_NAME, namespace=NAMESPACE,
+    values=[BACKEND_VALUES_FILE],
+    set=['image.repository=' + BACKEND_IMAGE_NAME]))
+
+k8s_yaml(helm(FRONTEND_CHART_PATH, name=FRONTEND_RELEASE_NAME, namespace=NAMESPACE,
+    values=[FRONTEND_VALUES_FILE],
+    set=['image.repository=' + FRONTEND_IMAGE_NAME]))
+
+# ---------- Resources ----------
+k8s_resource(
+    workload='postgres',
+    port_forwards='%d:5432' % POSTGRES_LOCAL_PORT,
+    objects=['postgres-data:persistentvolumeclaim'],
+    labels=['data'],
+)
+
+k8s_resource(
+    workload='elasticsearch',
+    port_forwards='%d:9200' % ELASTICSEARCH_LOCAL_PORT,
+    objects=['elasticsearch-data:persistentvolumeclaim'],
+    labels=['data'],
+)
+
+k8s_resource(
+    workload='pgadmin',
+    resource_deps=['postgres'],
+    objects=[
+        'pgadmin:ingress',
+        'pgadmin-servers:configmap',
+        'pgadmin-data:persistentvolumeclaim',
+    ],
+    links=[link(INGRESS_URL + '/pgadmin', 'pgAdmin')],
+    labels=['data'],
+)
+
+k8s_resource(
+    workload=BACKEND_IMAGE_NAME,
+    port_forwards='%d:%d' % (BACKEND_LOCAL_PORT, BACKEND_SERVICE_PORT),
+    resource_deps=['postgres', 'elasticsearch'],
+    objects=[
+        'graphqlastic-server-secrets:secret',
+        '%s-config:configmap' % BACKEND_RELEASE_NAME,
+    ],
+    links=[link('http://localhost:%d' % BACKEND_LOCAL_PORT, 'GraphQL playground')],
+    labels=['backend'],
+)
+
+k8s_resource(
+    workload=FRONTEND_IMAGE_NAME,
+    resource_deps=[BACKEND_IMAGE_NAME],
+    objects=[
+        '%s:ingress' % FRONTEND_IMAGE_NAME,
+        '%s-config:configmap' % FRONTEND_RELEASE_NAME,
+    ],
+    links=[link(INGRESS_URL, 'GraphQLastic')],
+    labels=['frontend'],
+)
+
+k8s_resource(
+    workload='populate-data-1',
+    new_name='populate-data',
+    resource_deps=['postgres', 'elasticsearch'],
+    labels=['data'],
+)
+
+local_resource(
+    'repopulate-data',
+    cmd='python3 populate_index.py',
+    dir=ROOT,
+    env={
+        'ELASTIC_URL': 'http://localhost:%d' % ELASTICSEARCH_LOCAL_PORT,
+        'POSTGRES_URL': 'postgresql://postgres:postgres@localhost:%d/graphqlastic' % POSTGRES_LOCAL_PORT,
+    },
+    resource_deps=['postgres', 'elasticsearch'],
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    auto_init=False,
+    labels=['data'],
+)
