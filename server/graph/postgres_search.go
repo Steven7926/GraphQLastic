@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 	"server/graph/model"
 	"server/postgres"
 	"strings"
@@ -32,6 +33,7 @@ func samEntitiesPostgres(ctx context.Context, limit int, offset *int, before *st
 
 	var totalSearch int
 	countSQL := "SELECT count(*) FROM sam_entities" + whereClause(where)
+	log.Printf("[postgres] %s args=%v", countSQL, args)
 	if err := pg.QueryRow(ctx, countSQL, args...).Scan(&totalSearch); err != nil {
 		return nil, err
 	}
@@ -56,6 +58,7 @@ func samEntitiesPostgres(ctx context.Context, limit int, offset *int, before *st
 		whereClause(where), order, len(args)-1, len(args),
 	)
 
+	log.Printf("[postgres] %s args=%v", pageSQL, args)
 	rows, err := pg.Query(ctx, pageSQL, args...)
 	if err != nil {
 		return nil, err

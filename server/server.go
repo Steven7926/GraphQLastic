@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -8,6 +10,7 @@ import (
 	"server/graph"
 	"server/postgres"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 
@@ -27,8 +30,15 @@ func main() {
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 	}))
 
-	graphql := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
-	router.Handle("/query", graphql)
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	// Log every incoming operation with the variables the client sent
+	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+		oc := graphql.GetOperationContext(ctx)
+		variables, _ := json.Marshal(oc.Variables)
+		log.Printf("[graphql] operation=%s variables=%s", oc.OperationName, variables)
+		return next(ctx)
+	})
+	router.Handle("/query", srv)
 	router.Handle("/", playgroundHandler())
 
 	elastic.InitES()

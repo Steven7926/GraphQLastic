@@ -69,8 +69,10 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 	filters := filtersFromArgs(typeArg, state, status)
 
 	if source != nil && *source == model.SearchSourcePostgres {
+		log.Printf("[samEntities] routing to postgres")
 		return samEntitiesPostgres(ctx, limit, offset, before, after, search, filters)
 	}
+	log.Printf("[samEntities] routing to elasticsearch")
 
 	var searchAfter []interface{}
 	var searchBefore []interface{}
@@ -163,12 +165,11 @@ func (r *queryResolver) SamEntities(ctx context.Context, first *int, offset *int
 	}
 
 	// Hers our final query, time to search and resolve
-	log.Printf("%+v", searchQuery)
-
 	var searchBuffer bytes.Buffer
 	if err := json.NewEncoder(&searchBuffer).Encode(searchQuery); err != nil {
 		return nil, err
 	}
+	log.Printf("[elasticsearch] POST /sam_entities/_search %s", strings.TrimSpace(searchBuffer.String()))
 	req := esapi.SearchRequest{
 		Index: []string{"sam_entities"},
 		Body:  &searchBuffer,
